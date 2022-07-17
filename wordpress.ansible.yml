@@ -1,0 +1,117 @@
+---
+- name: install wordpress on centos and ubuntu
+  hosts: all
+  become: yes
+  tasks:
+    - name: install repos on server
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      yum: 
+        name: 
+          - http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+          - epel-release
+        state: latest
+    - name: enabling repo
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      command: yum-config-manager --enable remi-php74
+    - name: packages
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      yum:
+        name:     
+          - yum-utils
+          - php
+          - php-common
+          - php-opcache
+          - php-mcrypt
+          - php-cli
+          - php-gd
+          - php-curl
+          - php-mysql
+        state: latest
+    - name: install httpd
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      yum:
+        name: httpd
+        state: installed
+    - name: start httpd
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      systemd: 
+        name: httpd
+        state: started
+        enabled: yes
+    - name: unarchive 
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: /root/
+        remote_src: yes  
+    - name: copying wordpress to html
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      copy:
+        src: /root/wordpress/
+        dest: /var/www/html/
+        remote_src: True
+        owner: apache
+        group: apache 
+    - name: disabling selinx 
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: SELINUX=disabled
+    - name: restart httpd
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
+      systemd:
+        name: httpd
+        state: restarted
+    - name: Update cache
+      when: (ansible_facts['distribution']) == "Ubuntu" and ansible_facts['distribution_major_version'] =="18"
+      apt:
+       update_cache: yes
+         
+    - name: Upgrade all packages on servers
+      when: (ansible_facts['distribution']) == "Ubuntu" and ansible_facts['distribution_major_version'] =="18"
+      apt:
+        name: "*"
+        state: latest
+      
+    - name:
+      when: (ansible_facts['distribution']) == "Ubuntu" and ansible_facts['distribution_major_version'] =="18"
+      apt:
+        pkg:      
+          - php 
+          - libapache2-mod-php 
+          - php-mysql 
+          - php-curl 
+          - php-gd 
+          - php-mbstring 
+          - php-xml 
+          - php-xmlrpc 
+          - php-soap 
+          - php-intl 
+          - php-zip 
+    - name: unarchive 
+      when: (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] == "18")
+      unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: /root/
+        remote_src: yes  
+    - name: copying wordpress to html
+      when: (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] == "18")
+      copy:
+        src: /root/wordpress/
+        dest: /var/www/html/
+        remote_src: True
+        owner: www-data
+        group: www-data
+    - name: removing index,html file
+      when: (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] == "18")
+      file:
+        path: /var/www/html/index.html
+        state: absent
+      
+    - name: start apache on Ubuntu
+      when: (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] == "18")
+      systemd:
+        name: apache2 
+        state: restarted
+        
